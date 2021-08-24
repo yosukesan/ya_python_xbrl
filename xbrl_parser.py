@@ -245,9 +245,6 @@ class XbrlApp:
                     if type(ast[i+1]) is not str:
                         continue
 
-                    if not ast[i+1].isnumeric():
-                        continue
-             
                     data_key = ast[i][target_key] 
                     context_key = ast[i]["contextRef"]
 
