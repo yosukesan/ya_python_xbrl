@@ -3,10 +3,10 @@ Yet Another Python XBRL Parser
 
 Top down parser for XBRL.
 
-Sample Code (sample.py)::
+Sample Code (sample.py)
 ===============================================================================
 
-Following code runs in O(n log N).
+This is a sample to read and convert a xbrl file to json.::
 
  import sys
  from xbrl_parser import XbrlApp
@@ -21,6 +21,8 @@ Following code runs in O(n log N).
 
 To run
 ===============================================================================
+::
+
     python3 sample.py ${xbrl_file}
 
 xbrl files are available from sec, edinet and others.
