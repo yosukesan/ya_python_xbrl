@@ -226,7 +226,7 @@ class XbrlApp:
 
         data: dict = {}
 
-        for i in range(len(ast)):
+        for i in range(len(ast)-1):
             #print(tag)
             if type(ast[i]) is not str:
                 key: set = self.prefix().intersection(ast[i].keys())
