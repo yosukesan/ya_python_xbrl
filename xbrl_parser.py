@@ -54,7 +54,7 @@ class XbrlLexer:
         self.t: XbrlToken = XbrlToken()
 
 
-    def __start_tag(self, text: str) -> list:
+    def __start_tag(self, text: str) -> dict:
         start_pos: int = self.pos + 1
 
         while text[self.pos] != self.t.right_bracket():
@@ -85,7 +85,7 @@ class XbrlLexer:
 
         return tags
 
-    def __end_tag(self, text: str) -> list:
+    def __end_tag(self, text: str) -> dict:
 
         start_pos : int = self.pos
         while text[self.pos] != self.t.right_bracket():
@@ -219,7 +219,7 @@ class XbrlApp:
     def prefix(self):
         return self.__prefixies
 
-    def to_json(self, text: str):
+    def to_json(self, text: str) -> dict:
         import json
 
         ast: list = self.__parser.parse(text)
@@ -260,4 +260,4 @@ class XbrlApp:
 
                     data[data_key][context_key] = ast[i]
 
-        print(json.dumps(data))
+        return data

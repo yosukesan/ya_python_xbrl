@@ -8,4 +8,7 @@ if __name__ == "__main__":
 
     filename : str = sys.argv[1]
     text = open(filename).read()
-    xbrl_app.to_json(text)
+
+    data: dict = {}
+    data = xbrl_app.to_json(text)
+    print(data)
