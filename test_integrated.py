@@ -3,6 +3,7 @@ import sys
 from xbrl_parser import XbrlApp
 
 if __name__ == "__main__":
+    import json
 
     xbrl_app : XbrlApp = XbrlApp()
 
@@ -11,4 +12,4 @@ if __name__ == "__main__":
 
     data: dict = {}
     data = xbrl_app.to_json(text)
-    print(data)
+    print(json.dumps(data))
