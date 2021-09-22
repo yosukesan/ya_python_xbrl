@@ -204,7 +204,9 @@ class XbrlApp:
                             "jptoo-pst_cor",\
                             "jptoo-toa_cor",\
                             "jptoo-ton_cor",\
-                            "jptoo-tor_cor"])
+                            "jptoo-tor_cor",\
+                            "jpcrp030000-asr_E04426-000",\
+                            "jpigp_cor"])
         prefix_sec = set(["currency",\
                         "country",\
                         "dei",\

@@ -3,27 +3,133 @@ from xbrl_parser import XbrlLexer, XbrlApp
 
 def test_lex_edinet_single_tag():
 
-    text : str = "<jpcrp_cor:NetSalesSummaryOfBusinessResults contextRef=\"Prior4YearDuration\" unitRef=\"JPY\" decimals=\"-6\">12256000000</jpcrp_cor:NetSalesSummaryOfBusinessResults>"
+    def jpcrp_cor():
+        """ test for jpcrp_cor ://www.google.com/aclk?sa=L&ai=DChcSEwjm-oLd4P3yAhVCJSsKHSqUD9AYABA2GgJzZg&sig=AOD64_3qCDUzpYJAG3r1ec2MUmA5mSWSOw&ctype=5&q=&ved=0ahUKEwjypfzc4P3yAhUaet4KHWJMA84QwzwIxwI&adurl= tag
+        """
+        text : str = "<jpcrp_cor:NetSalesSummaryOfBusinessResults" \
+                   + " contextRef=\"Prior4YearDuration\"" \
+                   + " unitRef=\"JPY\"" \
+                   + " decimals=\"-6\">" \
+                   + "12256000000" \
+                   + "</jpcrp_cor:NetSalesSummaryOfBusinessResults>"
 
-    lexer : XbrlLexer = XbrlLexer()
-    ast: list = lexer.lex(text)
+        lexer : XbrlLexer = XbrlLexer()
+        ast: list = lexer.lex(text)
 
-    # start tag
-    assert "jpcrp_cor" in ast[0]
-    assert ast[0]["jpcrp_cor"] == "NetSalesSummaryOfBusinessResults"
-    assert "contextRef" in ast[0]
-    assert ast[0]["contextRef"] == "Prior4YearDuration"
-    assert "unitRef" in ast[0]
-    assert ast[0]["unitRef"] == "JPY"
-    assert "decimals" in ast[0]
-    assert ast[0]["decimals"] == "-6"
+        # start tag 
+        assert "jpcrp_cor" in ast[0]
+        assert ast[0]["jpcrp_cor"] == "NetSalesSummaryOfBusinessResults"
+        assert "contextRef" in ast[0]
+        assert ast[0]["contextRef"] == "Prior4YearDuration"
+        assert "unitRef" in ast[0]
+        assert ast[0]["unitRef"] == "JPY"
+        assert "decimals" in ast[0]
+        assert ast[0]["decimals"] == "-6"
+        ## value    
+        assert ast[1] == "12256000000"
+        ## end tag
+        assert "jpcrp_cor" in ast[2]
+        assert ast[2]["jpcrp_cor"] == "NetSalesSummaryOfBusinessResults"
 
-    ## value    
-    assert ast[1] == "12256000000"
 
-    ## end tag
-    assert "jpcrp_cor" in ast[2]
-    assert ast[2]["jpcrp_cor"] == "NetSalesSummaryOfBusinessResults"
+    def jpdei_cor():
+        """ test for jpdei_cor tag
+        """
+
+        text: str = "<jpdei_cor:NumberOfSubmissionDEI"\
+                + " contextRef=\"FilingDateInstant\""\
+                + " unitRef=\"pure\""\
+                + " decimals=\"0\">"\
+                + "1"\
+                + "</jpdei_cor:NumberOfSubmissionDEI>"
+
+        lexer : XbrlLexer = XbrlLexer()
+        ast: list = lexer.lex(text)
+
+        #start tag
+        assert "jpdei_cor" in ast[0]
+        assert ast[0]["jpdei_cor"] == "NumberOfSubmissionDEI"
+        assert "contextRef" in ast[0]
+        assert ast[0]["contextRef"] == "FilingDateInstant"
+        assert "unitRef" in ast[0]
+        assert ast[0]["unitRef"] == "pure"
+        assert "decimals" in ast[0]
+        assert ast[0]["decimals"] == "0"
+        # value
+        assert ast[1] == "1"
+        # end tag
+        assert "jpdei_cor" in ast[2]
+        assert ast[2]["jpdei_cor"] == "NumberOfSubmissionDEI"
+
+    def jpcrp030000():
+        text : str = "<jpcrp030000-asr_E34064-000:ClassAPreferredSharesTotalNumberOfIssuedSharesSummaryOfBusinessResults"\
+                + " contextRef=\"Prior4YearInstant_NonConsolidatedMember\""\
+                + " unitRef=\"shares\""\
+                + " decimals=\"0\">"\
+                + "1500000"\
+                + "</jpcrp030000-asr_E34064-000:ClassAPreferredSharesTotalNumberOfIssuedSharesSummaryOfBusinessResults>"
+        lexer : XbrlLexer = XbrlLexer()
+        ast: list = lexer.lex(text)
+
+        # start tag
+        assert "jpcrp030000-asr_E34064-000" in ast[0]
+        assert ast[0]["jpcrp030000-asr_E34064-000"] == "ClassAPreferredSharesTotalNumberOfIssuedSharesSummaryOfBusinessResults"
+        assert "contextRef" in ast[0]
+        assert ast[0]["contextRef"] == "Prior4YearInstant_NonConsolidatedMember"
+        assert "unitRef" in ast[0]
+        assert ast[0]["unitRef"] == "shares"
+        assert "decimals" in ast[0]
+        assert ast[0]["decimals"] == "0"
+        # value
+        assert ast[1] == "1500000"
+        assert "jpcrp030000-asr_E34064-000" in ast[2]
+        assert ast[2]["jpcrp030000-asr_E34064-000"] == "ClassAPreferredSharesTotalNumberOfIssuedSharesSummaryOfBusinessResults"
+
+    def jppfs_cor():
+        text : str = "<jppfs_cor:OtherCL contextRef=\"Prior1YearInstant\" unitRef=\"JPY\" decimals=\"-6\">1352000000</jppfs_cor:OtherCL>"
+        lexer : XbrlLexer = XbrlLexer()
+        ast: list = lexer.lex(text)
+
+        # start tag
+        assert "jppfs_cor" in ast[0]
+        assert ast[0]["jppfs_cor"] == "OtherCL"
+        assert "contextRef" in ast[0]
+        assert ast[0]["contextRef"] == "Prior1YearInstant"
+        assert "unitRef" in ast[0]
+        assert ast[0]["unitRef"] == "JPY"
+        assert "decimals" in ast[0]
+        assert ast[0]["decimals"] == "-6"
+        # value
+        assert ast[1] == "1352000000"
+        # end tag
+        assert "jppfs_cor" in ast[2]
+        assert ast[2]["jppfs_cor"] == "OtherCL"
+
+    def jpdei_cor(): 
+        text : str = "<jpdei_cor:FilerNameInJapaneseDEI"\
+                + " contextRef=\"FilingDateInstant\">"\
+                + "株式会社メルカリ"\
+                + "</jpdei_cor:FilerNameInJapaneseDEI>"
+        lexer : XbrlLexer = XbrlLexer()
+        ast: list = lexer.lex(text)
+       
+        print(ast)
+
+        # start tag 
+        assert "jpdei_cor" in ast[0]
+        assert ast[0]["jpdei_cor"] == "FilerNameInJapaneseDEI"
+        assert "contextRef" in ast[0]
+        assert ast[0]["contextRef"] == "FilingDateInstant"
+        # value
+        assert "株式会社メルカリ" in ast[1]
+        # end tag
+        assert "jpdei_cor" in ast[2]
+        assert ast[2]["jpdei_cor"] == "FilerNameInJapaneseDEI"
+
+    jpcrp_cor()
+    jpdei_cor()
+    jpcrp030000()
+    jppfs_cor()
 
 def test_lex_edinet_multiple_tags():
 
