@@ -1,0 +1,9 @@
+
+*.egg-info
+.tox
+.mypy_cache
+
+dist
+Distutils.egg-info
+__pycache__
+
