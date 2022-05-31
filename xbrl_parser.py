@@ -17,6 +17,10 @@ class XbrlToken:
         self.__colon = ':'
         self.__nullstr = ''
         self.__dquote = '\"'
+        self.__tags_to_be_ignored = {'span'}
+
+    def tags_to_be_ignored(self) -> set:
+        return self.__tags_to_be_ignored
 
     def backslash(self) -> str:
         return self.__backslash
@@ -93,8 +97,14 @@ class XbrlLexer:
         objs = text[start_pos:self.pos] \
             .replace(self.t.dquote(), self.t.nullstr()) \
             .split(self.t.colon())
+
         key = objs[0]
-        value = objs[1]
+
+        # to avoid non xbrl tag: <span>
+        if key in self.t.tags_to_be_ignored():
+            value = ''
+        else:
+            value = objs[1]
 
         return {key : value}
 
