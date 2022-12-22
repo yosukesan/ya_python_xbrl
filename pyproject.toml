@@ -1,3 +1,10 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "ya_python_xbrl"
+description = "Yet another xbrl tool"
+license = {file = "LICENSE"}
+
+dynamic = ["version"]

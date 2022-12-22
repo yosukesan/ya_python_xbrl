@@ -1,6 +1,6 @@
 
 import sys
-from xbrl_parser import XbrlApp
+from ya_python_xbrl.xbrl_parser import XbrlApp
 
 if __name__ == "__main__":
     import json
