@@ -31,7 +31,7 @@ jobs:
               run: python3 -m pip install -r requirements.txt
 
             - name: linter check
-              run: pyflakes3 ya_python_xbrl/
+              run: flake8 ya_python_xbrl/
 
             - name: mypy check
               run: mypy ya_python_xbrl/
