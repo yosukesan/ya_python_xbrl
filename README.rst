@@ -1,6 +1,8 @@
 Yet Another Python XBRL Parser
 ###############################################################################
 
+https://github.com/yosukesan/ya_python_xbrl/blob/main/.github/workflows/ci.yml?branch=main
+
 Top down parser for XBRL.
 
 Sample Code (sample.py)
