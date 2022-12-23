@@ -37,5 +37,8 @@ jobs:
 #            - name: mypy check
 #              run: mypy ya_python_xbrl/
 
+            - name: install ya_python_xbrl
+              run: python3 -m pip install .
+
             - name: unit test
               run: pytest
