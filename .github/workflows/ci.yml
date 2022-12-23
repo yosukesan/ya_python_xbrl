@@ -1,0 +1,33 @@
+---
+name: CI script
+
+on:
+    push:
+        branches:
+            - master
+    workflow_dispatch:
+
+jobs:
+    unit-test:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest]
+                python-version: [3.x]
+        steps:
+            - uses: actions/checkout@v3
+            - name: setup python
+              uses: actions/setup-python@v3
+              with:
+                  python-version: ${{ matrix.python-version }}
+              env:
+                  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+
+#            - name: get python version
+#              run: python3 -V
+#
+#            - name: install dependencies
+#              run: python3 -m pip install -r requirements.txt
+#            - name: run python
+#              run: pytest-3
