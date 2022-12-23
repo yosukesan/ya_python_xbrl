@@ -38,4 +38,4 @@ jobs:
 #              run: mypy ya_python_xbrl/
 
             - name: unit test
-              run: pytest-3
+              run: pytest
