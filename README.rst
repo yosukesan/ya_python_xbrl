@@ -1,7 +1,7 @@
 Yet Another Python XBRL Parser
 ###############################################################################
 
-[![unit test](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml/badge.svg)](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml)
+[![unit test](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml)
 
 Top down parser for XBRL.
 
