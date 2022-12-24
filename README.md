@@ -1,7 +1,7 @@
 Yet Another Python XBRL Parser
 ###############################################################################
 
-[![unit test](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml/badge.svg)](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml)
+[![CI script](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml/badge.svg)](https://github.com/yosukesan/ya_python_xbrl/actions/workflows/ci.yml)
 
 Top down parser for XBRL.
 
@@ -11,7 +11,7 @@ Sample Code (sample.py)
 This is a sample to read and convert a xbrl file to json.::
 
  import sys
- from xbrl_parser import XbrlApp
+ from xbrl\_parser import XbrlApp
  
  if __name__ == "__main__":
  
