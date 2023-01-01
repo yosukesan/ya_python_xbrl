@@ -1,2 +1,2 @@
 
-from .xbrl_parser import XbrlLexer, XbrlApp
+from .xbrl_parser import XbrlLexer, XbrlApp, XbrlParser

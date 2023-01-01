@@ -1,5 +1,5 @@
 
-import sys
+import sys, math
 from .xbrl_ast import XbrlAst
 
 def err_msg(message):
@@ -87,7 +87,7 @@ class XbrlLexer:
             
                 i += 1
 
-        return tags
+        return {'XBRL_start': tags}
 
     def __end_tag(self, text: str) -> dict:
 
@@ -106,7 +106,7 @@ class XbrlLexer:
         else:
             value = objs[1]
 
-        return {key : value}
+        return {'XBRL_end': {key : value}}
 
     def __value(self, text: str):
 
@@ -185,14 +185,75 @@ class XbrlParser:
     """
 
     def __init__(self):
+        self._root = None
+
+    def decimals(self, tag) -> int:
+        #if not tag.isdigit():
+        #    err_msg('decimal conversion failed. decimal tag could not be detected.')
+        #    sys.exit(-1)
+        return -int(tag)
+
+    def is_start_tag(self, i: int, tags) -> bool:
+        return 'XBRL_start' in tags[i]
+
+    def is_end_tag(self, i: int, tags) -> bool:
+        return 'XBRL_end' in tags[i]
+
+    def is_net_sales(self, i: int, tags) -> bool:
+        if 'NetSales' in tags:
+            return True
+
+    def is_cost_of_sales(self, i: int, tags) -> bool:
+        if 'CostOfSales' in tags[i]:
+            return True
+
+    def is_COGS(self, i: int, tags):
         pass
+
+    def is_G_and_A(self, i: int, tags):
+        pass
+
+    def is_operating_profit(self, i: int, tags):
+        pass
+
+    def is_jppfs_cor(self, i: int, tags) -> bool:
+
+        ptag = tags[i-1]['XBRL_start']
+        #"<jppfs_cor:NetSales contextRef=\"Prior1YearDuration\" unitRef=\"JPY\" decimals=\"-6\">51683000000</jppfs_cor:NetSales>"
+
+        if 'jppfs_cor' in ptag:   
+ 
+            if self.is_net_sales(i, ptag['jppfs_cor']):
+                res = int(tags[i]) * math.pow(10, self.decimals(ptag['decimals']))
+                print(value)
+                
+            if self.is_cost_of_sales(i, ptag['jppfs_cor']):
+                print(tags[i])
 
     def parse(self, text: str):
         lexer : XbrlLexer = XbrlLexer()
+        tags: list = lexer.lex(text)
 
-        ast: list = lexer.lex(text)
+        for i in range(len(tags)-2):
 
-        return ast
+            if isinstance(tags[i], str):
+                continue
+
+            #print('TAGS', tags[i])
+
+            # start tag detection
+            if self.is_start_tag(i, tags):
+             
+                # store value  
+                self.is_jppfs_cor(i+1, tags)
+
+                # check if end tag matches
+                if self.is_end_tag(i+2, tags):
+                    continue    
+                else:
+                    tag_end_err : str = 'end tag unmatch: ' + str(tags[i+2])
+                    err_msg(tag_end_err)
+                    sys.exit(-1)
 
 class XbrlApp:
 
