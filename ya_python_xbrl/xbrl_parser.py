@@ -225,7 +225,7 @@ class XbrlParser:
  
             if self.is_net_sales(i, ptag['jppfs_cor']):
                 res = int(tags[i]) * math.pow(10, self.decimals(ptag['decimals']))
-                print(value)
+                print(res)
                 
             if self.is_cost_of_sales(i, ptag['jppfs_cor']):
                 print(tags[i])
