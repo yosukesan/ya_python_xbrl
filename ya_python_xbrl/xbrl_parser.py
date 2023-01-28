@@ -1,9 +1,13 @@
 
 import sys, math
+from collections import defaultdict
 from .xbrl_ast import XbrlAst
 
 def err_msg(message):
     print("Error: @" + __name__ + ' ' + message, file=sys.stderr)
+
+def rdict():
+    return defaultdict(rdict)
 
 class XbrlToken:
 
@@ -47,6 +51,7 @@ class XbrlToken:
         return self.__dquote
 
     def is_digit(self, char) -> bool:
+        """ refer ASCII table for 48 and 57 """
         return True if 48 <= ord(char) and ord(char) <= 57 else False
 
 class XbrlLexer:
@@ -56,7 +61,7 @@ class XbrlLexer:
         self.pos : int = 0
         self.tree: XbrlAst = XbrlAst()
         self.t: XbrlToken = XbrlToken()
-
+        self.xbrl_dict : dict = {}
 
     def __start_tag(self, text: str) -> dict:
         start_pos: int = self.pos + 1
@@ -131,7 +136,7 @@ class XbrlLexer:
         ast : list = []
         start_tag: dict = {}
         val: str = ""
-        end_tag: dict = {}
+        end_tag = rdict()
         
         while self.pos < len(text):
 
@@ -186,12 +191,33 @@ class XbrlParser:
 
     def __init__(self):
         self._root = None
+        self._mode : str = ''
+        self._dict = rdict()
 
-    def decimals(self, tag) -> int:
-        #if not tag.isdigit():
-        #    err_msg('decimal conversion failed. decimal tag could not be detected.')
-        #    sys.exit(-1)
-        return -int(tag)
+        self._sales = {'JP': 'NetSales', 'GAAP': 'NetSales', 'IFRS' : 'SalesOfProductsIFRS'}
+        self._cost_of_sales = {'JP' : 'CostOfSales', 'GAAP': 'CostOfSales', 'IFRS' : 'CostOfSalesIFRS'}
+        self._GandA = {'JP' : 'SellingGeneralAndAdministrativeExpenses', 'GAAP' :'SellingGeneralAndAdministrativeExpenses' , 'IFRS' : 'SellingGeneralAndAdministrativeExpensesIFRS'}
+        self._OpePL = {'JP' : 'OperatingProfitLoss', 'GAAP': 'OperatingIncome', 'IFRS' : 'OperatingProfitLossIFRS'}
+        self._Ebita = {'JP' : 'ProfitLossBeforeTax', 'GAAP' : 'IncomeBeforeIncomeTaxes', 'IFRS' : 'ProfitLossBeforeTaxIFRS'}
+
+    def check_mode(self, tags)->str:
+        """
+        Scan all tags to find literal IRFS or GAAP.
+        If no hit, parser switches to JP standard.
+        """
+        for i in range(len(tags)):
+            if 'XBRL_start' not in tags[i]:
+                continue
+
+            for k in tags[i]['XBRL_start']:
+                if 'IFRS' in tags[i]['XBRL_start'][k]:
+                    return 'IFRS'
+
+            for k in tags[i]['XBRL_start']:
+                if 'GAAP' in tags[i]['XBRL_start'][k]:
+                    return 'GAAP'
+
+        return 'JP'
 
     def is_start_tag(self, i: int, tags) -> bool:
         return 'XBRL_start' in tags[i]
@@ -207,46 +233,51 @@ class XbrlParser:
         if 'CostOfSales' in tags[i]:
             return True
 
-    def is_COGS(self, i: int, tags):
-        pass
+    def decimals(self, tag: dict)->int:
+        return math.pow(10, -int(tag['XBRL_start']['decimals']))
 
-    def is_G_and_A(self, i: int, tags):
-        pass
+    def decompose_tag(self, tag: list, i: int):
 
-    def is_operating_profit(self, i: int, tags):
-        pass
+        d = tag[i]['XBRL_start']
+        l = list(d.values())
+        v : int = 0
 
-    def is_jppfs_cor(self, i: int, tags) -> bool:
+        if tag[i+1].isdecimal():
+            v = int(tag[i+1])
+        else:
+            ValueError('Non numeric value')
 
-        ptag = tags[i-1]['XBRL_start']
-        #"<jppfs_cor:NetSales contextRef=\"Prior1YearDuration\" unitRef=\"JPY\" decimals=\"-6\">51683000000</jppfs_cor:NetSales>"
+        if self._sales[self._mode] == l[0]:
+            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
 
-        if 'jppfs_cor' in ptag:   
- 
-            if self.is_net_sales(i, ptag['jppfs_cor']):
-                res = int(tags[i]) * math.pow(10, self.decimals(ptag['decimals']))
-                print(res)
-                
-            if self.is_cost_of_sales(i, ptag['jppfs_cor']):
-                print(tags[i])
+        if self._cost_of_sales[self._mode] == l[0]:
+            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+
+        if self._GandA[self._mode] == l[0]:
+            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+
+        if self._OpePL[self._mode] == l[0]:
+            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+
+        if self._Ebita[self._mode] == l[0]:
+            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
 
     def parse(self, text: str):
         lexer : XbrlLexer = XbrlLexer()
         tags: list = lexer.lex(text)
+
+        self._mode = self.check_mode(tags)
 
         for i in range(len(tags)-2):
 
             if isinstance(tags[i], str):
                 continue
 
-            #print('TAGS', tags[i])
-
             # start tag detection
             if self.is_start_tag(i, tags):
-             
-                # store value  
-                self.is_jppfs_cor(i+1, tags)
-
+                if isinstance(tags[i]['XBRL_start'], dict):
+                    self.decompose_tag(tags, i)
+                
                 # check if end tag matches
                 if self.is_end_tag(i+2, tags):
                     continue    
@@ -255,10 +286,13 @@ class XbrlParser:
                     err_msg(tag_end_err)
                     sys.exit(-1)
 
+        return self._dict
+
 class XbrlApp:
 
     def __init__(self):
         self.__parser : XbrlParser = XbrlParser()
+        self.__dict : {}
 
         prefix_edinet = set(\
                             ["jpcrp-esr_cor",\
@@ -289,6 +323,7 @@ class XbrlApp:
         self.__prefixies = prefix_edinet
         self.__prefixies |= prefix_sec
 
+
     def prefix(self):
         return self.__prefixies
 
@@ -296,8 +331,6 @@ class XbrlApp:
         import json
 
         ast: list = self.__parser.parse(text)
-
-        data: dict = {}
 
         for i in range(len(ast)-1):
             #print(tag)
