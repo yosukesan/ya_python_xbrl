@@ -193,31 +193,55 @@ class XbrlParser:
         self._root = None
         self._mode : str = ''
         self._dict = rdict()
+       
+        # Profit loss 
+        self._sales = {'NetSales',
+            'SalesOfProductsIFRS',
+            'RevenuesUSGAAPSummaryOfBusinessResults',
+            'RevenueIFRSSummaryOfBusinessResults',
+            'OperatingRevenue1SummaryOfBusinessResults'}
+        self._cost_of_sales = {'CostOfSales', 'CostOfSalesIFRS'}
+        self._gross_profit = {'OrdinaryIncomeLossSummaryOfBusinessResults'} 
+        self._cost_of_general_admin = {'SellingGeneralAndAdministrativeExpenses', 'SellingGeneralAndAdministrativeExpensesIFRS'}
+        self._operating_profit = {'OperatingProfitLoss',
+            'OperatingIncome',
+            'OperatingProfitLossIFRS',
+            'ComprehensiveIncomeSummaryOfBusinessResults'}
 
-        self._sales = {'JP': 'NetSales', 'GAAP': 'NetSales', 'IFRS' : 'SalesOfProductsIFRS'}
-        self._cost_of_sales = {'JP' : 'CostOfSales', 'GAAP': 'CostOfSales', 'IFRS' : 'CostOfSalesIFRS'}
-        self._GandA = {'JP' : 'SellingGeneralAndAdministrativeExpenses', 'GAAP' :'SellingGeneralAndAdministrativeExpenses' , 'IFRS' : 'SellingGeneralAndAdministrativeExpensesIFRS'}
-        self._OpePL = {'JP' : 'OperatingProfitLoss', 'GAAP': 'OperatingIncome', 'IFRS' : 'OperatingProfitLossIFRS'}
-        self._Ebita = {'JP' : 'ProfitLossBeforeTax', 'GAAP' : 'IncomeBeforeIncomeTaxes', 'IFRS' : 'ProfitLossBeforeTaxIFRS'}
+        # BL
+        self._depriciation = {}
+        self._amortisation = {}
 
-    def check_mode(self, tags)->str:
-        """
-        Scan all tags to find literal IRFS or GAAP.
-        If no hit, parser switches to JP standard.
-        """
-        for i in range(len(tags)):
-            if 'XBRL_start' not in tags[i]:
-                continue
+        # Aux
+        self._current_year = {'CurrentYTDDuration',
+            'CurrentYearDuration',
+            'CurrentYTDDuration_NonConsolidatedMember',
+            'CurrentYearDuration_NonConsolidatedMember'}
 
-            for k in tags[i]['XBRL_start']:
-                if 'IFRS' in tags[i]['XBRL_start'][k]:
-                    return 'IFRS'
+        #self._cost_of_general_admin = {'JP' : 'SellingGeneralAndAdministrativeExpenses', 'GAAP' :'SellingGeneralAndAdministrativeExpenses' , 'IFRS' : 'SellingGeneralAndAdministrativeExpensesIFRS'}
+        #self._operating_profit = {'JP' : 'OperatingProfitLoss', 'GAAP': 'OperatingIncome', 'IFRS' : 'OperatingProfitLossIFRS'}
+        #self._ebita = {'JP' : 'ProfitLossBeforeTax', 'GAAP' : 'IncomeBeforeIncomeTaxes', 'IFRS' : 'ProfitLossBeforeTaxIFRS'}
+        #self._inventory = {'JP' : '', 'GAAP': 'MerchandiseAndFinishedGoods', 'IFRS': ''}
+        #self._depriciation = {'JP': 'AccumulatedDepreciationToolsFurnitureAndFixtures', 'GAAP': '', 'IFRS': ''}
 
-            for k in tags[i]['XBRL_start']:
-                if 'GAAP' in tags[i]['XBRL_start'][k]:
-                    return 'GAAP'
+    def current_year(self, data):
 
-        return 'JP'
+        if 'CurrentYTDDuration' in data:
+            return data['CurrentYTDDuration']
+
+        if 'CurrentYearDuration' in data:
+            return data['CurrentYearDuration']
+
+        if 'CurrentYTDDuration_NonConsolidatedMember' in data:
+            return data['CurrentYTDDuration_NonConsolidatedMember']
+
+        if 'CurrentYearDuration_NonConsolidatedMember' in data:
+            return data['CurrentYearDuration_NonConsolidatedMember']
+
+        return
+       
+    def get_mode(self)->str:
+        return self._mode
 
     def is_start_tag(self, i: int, tags) -> bool:
         return 'XBRL_start' in tags[i]
@@ -233,10 +257,14 @@ class XbrlParser:
         if 'CostOfSales' in tags[i]:
             return True
 
-    def decimals(self, tag: dict)->int:
+    def decimals(self, tag: dict):
+        if 'decimals' not in tag['XBRL_start']:
+            Warning('decimals could not be found. {0}'.format(tag['XBRL_start']))
+            return None
+
         return math.pow(10, -int(tag['XBRL_start']['decimals']))
 
-    def decompose_tag(self, tag: list, i: int):
+    def decompose_tag(self, result: dict, tag: list, i: int):
 
         d = tag[i]['XBRL_start']
         l = list(d.values())
@@ -247,26 +275,27 @@ class XbrlParser:
         else:
             ValueError('Non numeric value')
 
-        if self._sales[self._mode] == l[0]:
-            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+        if l[0] in self._sales:
+            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            result['sales'][time_stamp] = v
 
-        if self._cost_of_sales[self._mode] == l[0]:
-            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+        if l[0] in self._cost_of_sales: 
+            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            result['cost_of_sales'][time_stamp] = v
 
-        if self._GandA[self._mode] == l[0]:
-            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+        if l[0] in self._cost_of_general_admin:
+            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            result['cost_of_general_admin'][time_stamp] = v
 
-        if self._OpePL[self._mode] == l[0]:
-            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+        if l[0] in self._operating_profit:
+            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            result['operating_profit'][time_stamp] = v
 
-        if self._Ebita[self._mode] == l[0]:
-            self._dict[l[0]][d['contextRef']] = v * self.decimals(tag[i]) 
+        return result
 
     def parse(self, text: str):
         lexer : XbrlLexer = XbrlLexer()
         tags: list = lexer.lex(text)
-
-        self._mode = self.check_mode(tags)
 
         for i in range(len(tags)-2):
 
@@ -276,7 +305,7 @@ class XbrlParser:
             # start tag detection
             if self.is_start_tag(i, tags):
                 if isinstance(tags[i]['XBRL_start'], dict):
-                    self.decompose_tag(tags, i)
+                    self._dict = self.decompose_tag(self._dict, tags, i)
                 
                 # check if end tag matches
                 if self.is_end_tag(i+2, tags):
@@ -291,41 +320,23 @@ class XbrlParser:
 class XbrlApp:
 
     def __init__(self):
-        self.__parser : XbrlParser = XbrlParser()
-        self.__dict : {}
+        self._parser : XbrlParser = XbrlParser()
 
-        prefix_edinet = set(\
-                            ["jpcrp-esr_cor",\
-                            "jppfs_cor",\
-                            "jpcrp_cor",\
-                            "jpcrp-sbr_cor",\
-                            "jpctl_cor",\
-                            "jpdei_cor",\
-                            "jplvh_cor",\
-                            "jpsps-esr_cor",\
-                            "jpsps-sbr_cor",\
-                            "jpsps_cor",\
-                            "jptoi_cor",\
-                            "jptoo-pst_cor",\
-                            "jptoo-toa_cor",\
-                            "jptoo-ton_cor",\
-                            "jptoo-tor_cor",\
-                            "jpcrp030000-asr_E04426-000",\
-                            "jpigp_cor"])
-        prefix_sec = set(["currency",\
-                        "country",\
-                        "dei",\
-                        "exch",\
-                        "srt",\
-                        "stpr",\
-                        "us-gaap"])
-                            
-        self.__prefixies = prefix_edinet
-        self.__prefixies |= prefix_sec
+    def parse(self, text: str):
+        self._data = self._parser.parse(text)
 
+    def current_year(self, data):
+        return self._parser.current_year(data)
 
     def prefix(self):
         return self.__prefixies
+
+    def data(self):
+        return self._data
+
+    def fcf(self):
+        import pprint
+        pprint.pprint(self._data)
 
     def to_json(self, text: str) -> dict:
         import json
