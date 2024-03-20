@@ -197,12 +197,21 @@ class XbrlParser:
         # Profit loss 
         self._sales = {'NetSales',
             'SalesOfProductsIFRS',
+            'RevenueIFRS',
             'RevenuesUSGAAPSummaryOfBusinessResults',
             'RevenueIFRSSummaryOfBusinessResults',
             'OperatingRevenue1SummaryOfBusinessResults'}
-        self._cost_of_sales = {'CostOfSales', 'CostOfSalesIFRS'}
-        self._gross_profit = {'OrdinaryIncomeLossSummaryOfBusinessResults'} 
-        self._cost_of_general_admin = {'SellingGeneralAndAdministrativeExpenses', 'SellingGeneralAndAdministrativeExpensesIFRS'}
+
+        self._cost_of_sales = {'CostOfSales',
+            'CostOfSalesIFRS'}
+
+        self._gross_profit = {'OrdinaryIncomeLossSummaryOfBusinessResults',
+            'GrossProfitIFRS',
+            'GrossProfit'} 
+
+        self._cost_of_general_admin = {'SellingGeneralAndAdministrativeExpenses',
+            'SellingGeneralAndAdministrativeExpensesIFRS'}
+
         self._operating_profit = {'OperatingProfitLoss',
             'OperatingIncome',
             'OperatingProfitLossIFRS',
