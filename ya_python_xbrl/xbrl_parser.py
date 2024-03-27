@@ -217,6 +217,8 @@ class XbrlParser:
             'OperatingProfitLossIFRS',
             'ComprehensiveIncomeSummaryOfBusinessResults'}
 
+        self._profit_loss = {'ProfitLoss', 'ProfitLossIRFS'}
+
         # BL
         self._depriciation = {}
         self._amortisation = {}
@@ -292,13 +294,21 @@ class XbrlParser:
             time_stamp : str = tag[i]['XBRL_start']['contextRef']
             result['cost_of_sales'][time_stamp] = v
 
+        if l[0] in self._gross_profit:
+            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            result['gross_profit'][time_stamp] = v
+
         if l[0] in self._cost_of_general_admin:
             time_stamp : str = tag[i]['XBRL_start']['contextRef']
-            result['cost_of_general_admin'][time_stamp] = v
+            result['GA_expenses'][time_stamp] = v
 
         if l[0] in self._operating_profit:
             time_stamp : str = tag[i]['XBRL_start']['contextRef']
             result['operating_profit'][time_stamp] = v
+
+        if l[0] in self._profit_loss:
+            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            result['profit_loss'][time_stamp] = v
 
         return result
 
