@@ -202,7 +202,11 @@ class XbrlParser:
             'RevenueIFRSSummaryOfBusinessResults',
             'OperatingRevenue1SummaryOfBusinessResults'}
 
-        self._cost_of_sales = {'CostOfSales',
+        self._total_sales = {'TotalNetRevenuesIFRS'}
+
+        self._total_cost_and_expenses = {'TotalCostsAndExpensesIFRS'}
+
+        self._cost_of_goods_sold = {'CostOfSales',
             'CostOfSalesIFRS'}
 
         self._gross_profit = {'OrdinaryIncomeLossSummaryOfBusinessResults',
@@ -217,23 +221,23 @@ class XbrlParser:
             'OperatingProfitLossIFRS',
             'ComprehensiveIncomeSummaryOfBusinessResults'}
 
-        self._profit_loss = {'ProfitLoss', 'ProfitLossIRFS'}
+        self._profit_loss = {'ProfitLoss'}
+        self._profit_loss_ifrs = {'ProfitLossIRFS'}
 
         # BL
-        self._depriciation = {}
+        self._depriciation = {'AccumulatedDepreciationToolsFurnitureAndFixtures'}
         self._amortisation = {}
+
+        self._account_receivable = {'NotesAndAccountsReceivableTrade'}
+        self._inventory = {'MerchandiseAndFinishedGoods'}
+        self._PPE = {'PropertyPlantAndEquipment'}
+        self._account_payable = {'NotesAndAccountsPayableTrade'}
 
         # Aux
         self._current_year = {'CurrentYTDDuration',
             'CurrentYearDuration',
             'CurrentYTDDuration_NonConsolidatedMember',
             'CurrentYearDuration_NonConsolidatedMember'}
-
-        #self._cost_of_general_admin = {'JP' : 'SellingGeneralAndAdministrativeExpenses', 'GAAP' :'SellingGeneralAndAdministrativeExpenses' , 'IFRS' : 'SellingGeneralAndAdministrativeExpensesIFRS'}
-        #self._operating_profit = {'JP' : 'OperatingProfitLoss', 'GAAP': 'OperatingIncome', 'IFRS' : 'OperatingProfitLossIFRS'}
-        #self._ebita = {'JP' : 'ProfitLossBeforeTax', 'GAAP' : 'IncomeBeforeIncomeTaxes', 'IFRS' : 'ProfitLossBeforeTaxIFRS'}
-        #self._inventory = {'JP' : '', 'GAAP': 'MerchandiseAndFinishedGoods', 'IFRS': ''}
-        #self._depriciation = {'JP': 'AccumulatedDepreciationToolsFurnitureAndFixtures', 'GAAP': '', 'IFRS': ''}
 
     def current_year(self, data):
 
@@ -264,7 +268,7 @@ class XbrlParser:
         if 'NetSales' in tags:
             return True
 
-    def is_cost_of_sales(self, i: int, tags) -> bool:
+    def is_cost_goods_sold(self, i: int, tags) -> bool:
         if 'CostOfSales' in tags[i]:
             return True
 
@@ -286,29 +290,43 @@ class XbrlParser:
         else:
             ValueError('Non numeric value')
 
+        # Profit Loss
         if l[0] in self._sales:
-            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            time_stamp : str = d['contextRef']
             result['sales'][time_stamp] = v
 
-        if l[0] in self._cost_of_sales: 
-            time_stamp : str = tag[i]['XBRL_start']['contextRef']
-            result['cost_of_sales'][time_stamp] = v
+        if l[0] in self._cost_of_goods_sold: 
+            time_stamp : str = d['contextRef']
+            result['COGS'][time_stamp] = v
 
         if l[0] in self._gross_profit:
-            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            time_stamp : str = d['contextRef']
             result['gross_profit'][time_stamp] = v
 
         if l[0] in self._cost_of_general_admin:
-            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            time_stamp : str = d['contextRef']
             result['GA_expenses'][time_stamp] = v
 
         if l[0] in self._operating_profit:
-            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            time_stamp : str = d['contextRef']
             result['operating_profit'][time_stamp] = v
 
         if l[0] in self._profit_loss:
-            time_stamp : str = tag[i]['XBRL_start']['contextRef']
+            time_stamp : str = d['contextRef']
             result['profit_loss'][time_stamp] = v
+
+        # IFRS: Profit loss, overwrite tags
+        if l[0] in self._total_sales:
+            time_stamp : str = d['contextRef']
+
+            result['sales'][time_stamp] = v
+            result['gross_profit'][time_stamp] = v - result['cost_of_sales'][time_stamp]
+
+        if l[0] in self._profit_loss:
+            time_stamp : str = d['contextRef']
+            result['profit_loss'][time_stamp] = v
+
+        # Balance Sheet
 
         return result
 
