@@ -1,5 +1,5 @@
 
-from ya_python_xbrl import XbrlLexer, XbrlApp, XbrlParser
+from ya_python_xbrl import XbrlLexer, XbrlApp, XbrlParser, XbrlApp
 
 def test_lex_edinet_single_tag():
 
@@ -30,7 +30,6 @@ def test_lex_edinet_single_tag():
         ## end tag
         assert "jpcrp_cor" in ast[2]['XBRL_end']
         assert ast[2]['XBRL_end']["jpcrp_cor"] == "NetSalesSummaryOfBusinessResults"
-
 
     def jpdei_cor():
         """ test for jpdei_cor tag
@@ -172,18 +171,6 @@ def test_lex_edinet_multiple_tags():
     assert "jppfs_cor" in ast[5]['XBRL_end']
     assert ast[5]['XBRL_end']["jppfs_cor"] == "NetSales"
 
-def test_lex_edinet_unrequired_tags():
-
-    pass
-    #text = "</xbrli:unit>" \
-    #          + "   <xbrli:unit id=\"pure\">" \
-    #          + "<xbrli:measure>xbrli:pure</xbrli:measure>" \
-    #          + "</xbrli:unit>" \
-    #          + "   <jpdei_cor:NumberOfSubmissionDEI contextRef=\"FilingDateInstant\" unitRef=\"pure\" decimals=\"0\">1</jpdei_cor:NumberOfSubmissionDEI>" \
-    #          + "  <jpcrp_cor:NetSalesSummaryOfBusinessResults contextRef=\"Prior4YearDuration\" unitRef=\"JPY\" decimals=\"-6\">12256000000</jpcrp_cor:NetSalesSummaryOfBusinessResults>"
-    #lexer : XbrlLexer = XbrlLexer()
-    #ast: list = lexer.lex(text)
-
 def test_lex_sec_multiple_tags():
     
     pass
@@ -227,18 +214,6 @@ def test_lex_sec_multiple_tags():
     assert "us-gaap" in ast[5]['XBRL_end']
     assert ast[5]['XBRL_end']["us-gaap"] == "ProfitLoss"
 
-def test_parser_to_json():
-
-    xbrl_app : XbrlApp = XbrlApp()
-
-    text = "<jpcrp_cor:NetSalesSummaryOfBusinessResults contextRef=\"Prior4YearDuration\" unitRef=\"JPY\" decimals=\"-6\">12256000000</jpcrp_cor:NetSalesSummaryOfBusinessResults>" \
-         + "<jppfs_cor:NetSales contextRef=\"Prior1YearDuration\" unitRef=\"JPY\" decimals=\"-6\">51683000000</jppfs_cor:NetSales>"
-    #data = xbrl_app.to_json(text)
-
-    #assert "JPY" == data['XBRL_start']['jpdei_cor']["NetSalesSummaryOfBusinessResults"]["Prior4YearDuration"]["unitRef"]
-    #assert "-6" == data["NetSalesSummaryOfBusinessResults"]["Prior4YearDuration"]["decimals"]
-    #assert "12256000000" == data["NetSalesSummaryOfBusinessResults"]["Prior4YearDuration"]["value"]
-
 def test_parser():
 
     text = "<jpcrp_cor:NetSalesSummaryOfBusinessResults contextRef=\"Prior4YearDuration\" unitRef=\"JPY\" decimals=\"-6\">12256000000</jpcrp_cor:NetSalesSummaryOfBusinessResults>" \
@@ -246,13 +221,38 @@ def test_parser():
     xbrl_parser : XbrlParser = XbrlParser()
     data = xbrl_parser.parse(text)
 
+def test_non_decimals():
+    text = '<jppfs_cor:NetSales contextRef="CurrentYTDDuration_NonConsolidatedMember_jpcrp040300-q3r_E32620-000NewITTransformationBusinessReportableSegmentsMember" unitRef="JPY" decimals="-3">1861528000</jppfs_cor:NetSales>' \
+         + '<jppfs_cor:NetSales xsi:nil="true" contextRef="CurrentYTDDuration_NonConsolidatedMember_jpcrp040300-q3r_E32620-000InvestmentBusinessReportableSegmentsMember" unitRef="JPY"/>' \
+         + '<jppfs_cor:NetSales contextRef="CurrentYTDDuration_NonConsolidatedMember_ReportableSegmentsMember" unitRef="JPY" decimals="-3">1861528000</jppfs_cor:NetSales>' \
+         + '<jppfs_cor:NetSales xsi:nil="true" contextRef="CurrentYTDDuration_NonConsolidatedMember_ReconcilingItemsMember" unitRef="JPY"/>'
+
+    xbrl_parser : XbrlParser = XbrlParser()
+    data = xbrl_parser.parse(text)
+
+def test_decimals():
+    """
+    https://github.com/yosukesan/ya_python_xbrl/issues/18
+    """
+
+    text = '<jppfs_cor:ProfitLoss contextRef="Prior1YTDDuration" decimals="-3" unitRef="JPY">787137000</jppfs_cor:ProfitLoss>'\
+         + '<jppfs_cor:ProfitLoss contextRef="CurrentYTDDuration" decimals="-3" unitRef="JPY">-500846000</jppfs_cor:ProfitLoss>'
+
+    xbrl_parser : XbrlParser = XbrlParser()
+    data = xbrl_parser.parse(text)
+    assert isinstance(data['profit_loss']['Prior1YTDDuration'], int)
+    assert isinstance(data['profit_loss']['CurrentYTDDuration'], int)
+    assert data['profit_loss']['Prior1YTDDuration'] == 787137000000
+    assert data['profit_loss']['CurrentYTDDuration'] == -500846000000
+
 if __name__ == "__main__":
 
+    # check lexer
     test_lex_edinet_single_tag()
     test_lex_edinet_multiple_tags()
     test_lex_sec_multiple_tags()
-    #test_unrequired_tags()
 
-    #test_parser_to_json()
+    # check app
+    test_decimals()
 
     test_parser()

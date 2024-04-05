@@ -122,8 +122,7 @@ class XbrlLexer:
             if text[self.pos] == self.t.right_bracket():
                 self.pos += 1
                 continue
-            #if not self.t.is_digit(text[self.pos]):
-            #    self.err_msg("not a digit")
+        
             self.pos += 1 
 
         return text[start_pos:self.pos]
@@ -224,16 +223,28 @@ class XbrlParser:
         self._profit_loss = {'ProfitLoss'}
         self._profit_loss_ifrs = {'ProfitLossIRFS'}
 
+        # for cash flow statement
+        self._income_before_tax = {'IncomeBeforeIncomeTaxes'}
+        self._extra_ordinary_profit = {'ExtraordinaryIncome'}
+        self._extra_ordinary_loss = {'ExtraordinaryLoss'}
+        self._investiment_loss= {'LossOnValuationOfInvestmentSecuritiesEL'}
         # BL
         self._depriciation = {'AccumulatedDepreciationToolsFurnitureAndFixtures'}
         self._amortisation = {}
 
-        self._account_receivable = {'NotesAndAccountsReceivableTrade'}
+        self._account_receivable = {'NotesAndAccountsReceivableTrade',
+            'AccountsReceivableTradeNet',
+            'AccountsReceivableTrade'}
         self._inventory = {'MerchandiseAndFinishedGoods'}
         self._PPE = {'PropertyPlantAndEquipment'}
-        self._account_payable = {'NotesAndAccountsPayableTrade'}
+        self._account_payable = {'NotesAndAccountsPayableTrade', 'AccountsPayableTrade'}
 
+        
         # Aux
+
+        self._num_of_shares = {'NumberOfIssuedSharesAsOfFilingDateIssuedSharesTotalNumberOfSharesEtc',
+            'TotalNumberOfIssuedSharesSummaryOfBusinessResults'}
+
         self._current_year = {'CurrentYTDDuration',
             'CurrentYearDuration',
             'CurrentYTDDuration_NonConsolidatedMember',
@@ -272,59 +283,74 @@ class XbrlParser:
         if 'CostOfSales' in tags[i]:
             return True
 
+    def is_decimals(self, tag: dict):
+        return True if 'decimals' in tag['XBRL_start'] else False
+
     def decimals(self, tag: dict):
-        if 'decimals' not in tag['XBRL_start']:
+        if not self.is_decimals(tag):
             Warning('decimals could not be found. {0}'.format(tag['XBRL_start']))
             return None
 
-        return math.pow(10, -int(tag['XBRL_start']['decimals']))
+        # since this always be power of 10, cast it to int
+        return int(math.pow(10, -int(tag['XBRL_start']['decimals'])))
 
     def decompose_tag(self, result: dict, tag: list, i: int):
 
         d = tag[i]['XBRL_start']
         l = list(d.values())
         v : int = 0
-
-        if tag[i+1].isdecimal():
-            v = int(tag[i+1])
-        else:
-            ValueError('Non numeric value')
+        pw = 1
 
         # Profit Loss
         if l[0] in self._sales:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['sales'][time_stamp] = v
+            result['sales'][time_stamp] = int(tag[i+1]) * pw
 
         if l[0] in self._cost_of_goods_sold: 
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['COGS'][time_stamp] = v
+            result['COGS'][time_stamp] = int(tag[i+1]) * pw
 
         if l[0] in self._gross_profit:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['gross_profit'][time_stamp] = v
+            result['gross_profit'][time_stamp] = int(tag[i+1]) * pw
 
         if l[0] in self._cost_of_general_admin:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['GA_expenses'][time_stamp] = v
+            result['GA_expenses'][time_stamp] = int(tag[i+1]) * pw
 
         if l[0] in self._operating_profit:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['operating_profit'][time_stamp] = v
+            result['operating_profit'][time_stamp] = int(tag[i+1]) * pw
 
         if l[0] in self._profit_loss:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['profit_loss'][time_stamp] = v
+            result['profit_loss'][time_stamp] = int(tag[i+1]) * pw
 
         # IFRS: Profit loss, overwrite tags
         if l[0] in self._total_sales:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
+            result['sales'][time_stamp] = int(tag[i+1]) * pw
+            result['gross_profit'][time_stamp] = int(tag[i+1]) * pw - result['cost_of_sales'][time_stamp]
 
-            result['sales'][time_stamp] = v
-            result['gross_profit'][time_stamp] = v - result['cost_of_sales'][time_stamp]
-
-        if l[0] in self._profit_loss:
+        if l[0] in self._profit_loss_ifrs:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['profit_loss'][time_stamp] = v
+            result['profit_loss'][time_stamp] = int(tag[i+1]) * pw
 
         # Balance Sheet
 
