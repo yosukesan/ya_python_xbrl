@@ -214,22 +214,44 @@ def test_lex_sec_multiple_tags():
     assert "us-gaap" in ast[5]['XBRL_end']
     assert ast[5]['XBRL_end']["us-gaap"] == "ProfitLoss"
 
-def test_parser():
+def test_sales():
 
-    text = "<jpcrp_cor:NetSalesSummaryOfBusinessResults contextRef=\"Prior4YearDuration\" unitRef=\"JPY\" decimals=\"-6\">12256000000</jpcrp_cor:NetSalesSummaryOfBusinessResults>" \
-         + "<jppfs_cor:NetSales contextRef=\"Prior1YearDuration\" unitRef=\"JPY\" decimals=\"-6\">51683000000</jppfs_cor:NetSales>"
-    xbrl_parser : XbrlParser = XbrlParser()
-    data = xbrl_parser.parse(text)
-
-def test_non_decimals():
-    text = '<jppfs_cor:NetSales contextRef="CurrentYTDDuration_NonConsolidatedMember_jpcrp040300-q3r_E32620-000NewITTransformationBusinessReportableSegmentsMember" unitRef="JPY" decimals="-3">1861528000</jppfs_cor:NetSales>' \
-         + '<jppfs_cor:NetSales xsi:nil="true" contextRef="CurrentYTDDuration_NonConsolidatedMember_jpcrp040300-q3r_E32620-000InvestmentBusinessReportableSegmentsMember" unitRef="JPY"/>' \
-         + '<jppfs_cor:NetSales contextRef="CurrentYTDDuration_NonConsolidatedMember_ReportableSegmentsMember" unitRef="JPY" decimals="-3">1861528000</jppfs_cor:NetSales>' \
-         + '<jppfs_cor:NetSales xsi:nil="true" contextRef="CurrentYTDDuration_NonConsolidatedMember_ReconcilingItemsMember" unitRef="JPY"/>'
+    text = '<jpcrp_cor:NetSalesSummaryOfBusinessResults contextRef=\"Prior4YearDuration\" unitRef=\"JPY\" decimals=\"-6\">12256000000</jpcrp_cor:NetSalesSummaryOfBusinessResults>'\
+         + '<jppfs_cor:NetSales contextRef=\"Prior1YearDuration\" unitRef=\"JPY\" decimals=\"3\">-51683000000</jppfs_cor:NetSales>'
+         #+ '<jppfs_cor:NetSales xsi:nil=\"true\" contextRef=\"CurrentYTDDuration_NonConsolidatedMember_jpcrp040300-q3r_E32620-000InvestmentBusinessReportableSegmentsMember\" unitRef=\"JPY\"/>'
 
     xbrl_parser : XbrlParser = XbrlParser()
-    data = xbrl_parser.parse(text)
+    lexer : XbrlLexer = XbrlLexer()
+    lexed: list = lexer.lex(text)
+    parsed: dict = xbrl_parser.parse(text)
 
+    assert isinstance(lexed[0]['XBRL_start']['jpcrp_cor'], str)
+    assert lexed[0]['XBRL_start']['jpcrp_cor'] == 'NetSalesSummaryOfBusinessResults'
+    assert lexed[0]['XBRL_start']['contextRef'] == 'Prior4YearDuration'
+    assert lexed[0]['XBRL_start']['unitRef'] == 'JPY'
+    assert isinstance(lexed[0]['XBRL_start']['decimals'], str)
+    assert lexed[0]['XBRL_start']['decimals'] == '-6'
+    assert isinstance(lexed[1], str)
+    assert lexed[1] == '12256000000' # stored value check
+    assert lexed[2]['XBRL_end']['jpcrp_cor'] == lexed[0]['XBRL_start']['jpcrp_cor'] # closing tag check
+
+    assert isinstance(lexed[3]['XBRL_start']['jppfs_cor'], str)
+    assert lexed[3]['XBRL_start']['jppfs_cor'] == 'NetSales'
+    assert lexed[3]['XBRL_start']['contextRef'] == 'Prior1YearDuration'
+    assert lexed[3]['XBRL_start']['unitRef'] == 'JPY'
+    assert lexed[3]['XBRL_start']['decimals'] == '3'
+    assert lexed[4] == '-51683000000' # stored value check
+    assert lexed[5]['XBRL_end']['jppfs_cor'] == lexed[3]['XBRL_start']['jppfs_cor']
+
+    #assert isinstance(lexed[6]['XBRL_start']['jpcrp_cor'], str)
+
+    # parser test
+    #assert isinstance(parsed['sales']['Prior4YearDuration'], int)
+    assert isinstance(parsed['sales']['Prior1YearDuration'], int)
+    #assert parsed['sales']['Prior4YearDuration'] == 12256000000000000
+    assert parsed['sales']['Prior1YearDuration'] == -51683000
+
+  
 def test_decimals():
     """
     https://github.com/yosukesan/ya_python_xbrl/issues/18
@@ -245,6 +267,28 @@ def test_decimals():
     assert data['profit_loss']['Prior1YTDDuration'] == 787137000000
     assert data['profit_loss']['CurrentYTDDuration'] == -500846000000
 
+def test_BS():
+
+    text = '<jppfs_cor:PropertyPlantAndEquipment contextRef=\"Prior1YearInstant_NonConsolidatedMember\" unitRef=\"JPY\" decimals=\"-3\">41272000</jppfs_cor:PropertyPlantAndEquipment>'\
+         + '<jppfs_cor:PropertyPlantAndEquipment contextRef=\"CurrentYearInstant_NonConsolidatedMember\" unitRef=\"JPY\" decimals=\"-3\">60422000</jppfs_cor:PropertyPlantAndEquipment>'
+
+    xbrl_parser : XbrlParser = XbrlParser()
+    data = xbrl_parser.parse(text)
+
+    assert data['PPE']['Prior1YearInstant_NonConsolidatedMember'] == 41272000000
+    assert data['PPE']['CurrentYearInstant_NonConsolidatedMember'] == 60422000000
+
+    xbrl_app: XbrlApp = XbrlApp()
+    xbrl_app.parse(text)
+    xbrl_app.current_year(data['PPE']) == data['PPE']['CurrentYearInstant_NonConsolidatedMember'] 
+
+def test_read_cashflow():
+
+    text = '<jppfs_cor:NetCashProvidedByUsedInOperatingActivities contextRef=\"Prior1YearDuration_NonConsolidatedMember\" unitRef=\"JPY\" decimals=\"-3\">12488774000</jppfs_cor:NetCashProvidedByUsedInOperatingActivities>'
+    xbrl_parser : XbrlParser = XbrlParser()
+    data = xbrl_parser.parse(text)
+    assert data['cashflow_from_operation']['Prior1YearDuration_NonConsolidatedMember'] == 12488774000000
+
 if __name__ == "__main__":
 
     # check lexer
@@ -254,5 +298,6 @@ if __name__ == "__main__":
 
     # check app
     test_decimals()
-
-    test_parser()
+    test_sales()
+    test_BS()
+    test_read_cashflow()

@@ -169,7 +169,8 @@ class XbrlLexer:
         return ast
 
 class XbrlParser:
-    """ EBNF: This is unofficial grammer. Back deduced from several exmaples.
+    """
+    EBNF: This is unofficial grammer. Back deduced from several exmaples.
     left_bracket := '<'
     right_bracket := '>'
     back_slash := '/'
@@ -222,12 +223,11 @@ class XbrlParser:
 
         self._profit_loss = {'ProfitLoss'}
         self._profit_loss_ifrs = {'ProfitLossIRFS'}
-
-        # for cash flow statement
         self._income_before_tax = {'IncomeBeforeIncomeTaxes'}
         self._extra_ordinary_profit = {'ExtraordinaryIncome'}
         self._extra_ordinary_loss = {'ExtraordinaryLoss'}
         self._investiment_loss= {'LossOnValuationOfInvestmentSecuritiesEL'}
+
         # BL
         self._depriciation = {'AccumulatedDepreciationToolsFurnitureAndFixtures'}
         self._amortisation = {}
@@ -239,6 +239,8 @@ class XbrlParser:
         self._PPE = {'PropertyPlantAndEquipment'}
         self._account_payable = {'NotesAndAccountsPayableTrade', 'AccountsPayableTrade'}
 
+        # Cash flow
+        self._cashflow_from_operation = {'NetCashProvidedByUsedInOperatingActivities'}
         
         # Aux
 
@@ -248,21 +250,26 @@ class XbrlParser:
         self._current_year = {'CurrentYTDDuration',
             'CurrentYearDuration',
             'CurrentYTDDuration_NonConsolidatedMember',
-            'CurrentYearDuration_NonConsolidatedMember'}
+            'CurrentYearDuration_NonConsolidatedMember',
+            'CurrentYearInstant_NonConsolidatedMember'}
 
     def current_year(self, data):
 
-        if 'CurrentYTDDuration' in data:
-            return data['CurrentYTDDuration']
+        #if 'CurrentYTDDuration' in data:
+        #    return data['CurrentYTDDuration']
 
-        if 'CurrentYearDuration' in data:
-            return data['CurrentYearDuration']
+        #if 'CurrentYearDuration' in data:
+        #    return data['CurrentYearDuration']
 
-        if 'CurrentYTDDuration_NonConsolidatedMember' in data:
-            return data['CurrentYTDDuration_NonConsolidatedMember']
+        #if 'CurrentYTDDuration_NonConsolidatedMember' in data:
+        #    return data['CurrentYTDDuration_NonConsolidatedMember']
 
-        if 'CurrentYearDuration_NonConsolidatedMember' in data:
-            return data['CurrentYearDuration_NonConsolidatedMember']
+        #if 'CurrentYearDuration_NonConsolidatedMember' in data:
+        #    return data['CurrentYearDuration_NonConsolidatedMember']
+
+        for k in self._current_year:
+            if k in data:
+                return data[k]
 
         return
        
@@ -291,8 +298,8 @@ class XbrlParser:
             Warning('decimals could not be found. {0}'.format(tag['XBRL_start']))
             return None
 
-        # since this always be power of 10, cast it to int
-        return int(math.pow(10, -int(tag['XBRL_start']['decimals'])))
+        exp = int(tag['XBRL_start']['decimals'])
+        return math.pow(10, -exp) if exp < 0 else 1.0 / math.pow(10, exp) 
 
     def decompose_tag(self, result: dict, tag: list, i: int):
 
@@ -306,7 +313,7 @@ class XbrlParser:
             if self.is_decimals(tag[i]):
                 pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['sales'][time_stamp] = int(tag[i+1]) * pw
+            result['sales'][time_stamp] = int(int(tag[i+1]) * pw)
 
         if l[0] in self._cost_of_goods_sold: 
             if self.is_decimals(tag[i]):
@@ -336,7 +343,7 @@ class XbrlParser:
             if self.is_decimals(tag[i]):
                 pw = self.decimals(tag[i])
             time_stamp : str = d['contextRef']
-            result['profit_loss'][time_stamp] = int(tag[i+1]) * pw
+            result['profit_loss'][time_stamp] = int(int(tag[i+1]) * pw)
 
         # IFRS: Profit loss, overwrite tags
         if l[0] in self._total_sales:
@@ -353,6 +360,49 @@ class XbrlParser:
             result['profit_loss'][time_stamp] = int(tag[i+1]) * pw
 
         # Balance Sheet
+        if l[0] in self._account_payable: 
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
+            time_stamp : str = d['contextRef']
+            result['account_payable'][time_stamp] = int(tag[i+1]) * pw
+
+        if l[0] in self._account_receivable:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
+            time_stamp : str = d['contextRef']
+            result['account_receivable'][time_stamp] = int(tag[i+1]) * pw
+
+        if l[0] in self._PPE:
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
+            time_stamp : str = d['contextRef']
+            result['PPE'][time_stamp] = int(tag[i+1]) * pw
+
+        #if l[0] in self._defered_tax:
+        #    if self.is_decimals(tag[i]):
+        #        pw = self.decimals(tag[i])
+        #    time_stamp : str = d['contextRef']
+        #    result['defered_tax'][time_stamp] = int(tag[i+1]) * pw
+
+        #if l[0] in self._allowance_for_loan_loss:
+        #    if self.is_decimals(tag[i]):
+        #        pw = self.decimals(tag[i])
+        #    time_stamp : str = d['contextRef']
+        #    result['allowance_for_loan_loss'][time_stamp] = int(tag[i+1]) * pw
+
+        #if l[0] in self._depreciation:
+        #if l[0] in self._amortisation:
+        #if l[0] in self._inventories: 
+        #if l[0] in self._advance_payment:
+        #if l[0] in self._advance_receipt:
+        #if l[0] in self._loan_payable:
+
+        # read from Cashflow
+        if l[0] in self._cashflow_from_operation: 
+            if self.is_decimals(tag[i]):
+                pw = self.decimals(tag[i])
+            time_stamp : str = d['contextRef']
+            result['cashflow_from_operation'][time_stamp] = int(tag[i+1]) * pw
 
         return result
 
